@@ -1,20 +1,11 @@
 const { Router } = require('express');
 const path = require("path");
+const YD = require('youtubeMP3DownloaderConfig');
 
 const router = Router();
 
 const ffmpegPath = path.join(__dirname, 'ffmpeg');
-const outputPath = '/Users/scott/Desktop/Music/Ripped/';
-
-//Configure YoutubeMp3Downloader with your settings
-const YD = new YoutubeMp3Downloader({
-    ffmpegPath,        // FFmpeg binary location
-    outputPath,    // Output file location (default: the home directory)
-    "youtubeVideoQuality": "highestaudio",  // Desired video quality (default: highestaudio)
-    "queueParallelism": 2,                  // Download parallelism (default: 1)
-    "progressTimeout": 2000,                // Interval in ms for the progress reports (default: 1000)
-    "allowWebm": false                      // Enable download from WebM sources (default: false)
-});
+const outputPath = '/Users/scottrosen/Desktop/Music/Ripped/';
 
 const getVideoId = (youtubeLink) => {
     const splitArr = youtubeLink.split('=');
