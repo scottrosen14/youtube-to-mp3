@@ -1,11 +1,13 @@
 const { Router } = require('express');
 const path = require("path");
-const YD = require('youtubeMP3DownloaderConfig');
+const ffmetadata = require("ffmetadata");
+const youtubeDownloader = require('./youtubeMP3-config');
 
 const router = Router();
 
-const ffmpegPath = path.join(__dirname, 'ffmpeg');
+const ffmpegPath = '/usr/local/bin/ffmpeg';
 const outputPath = '/Users/scottrosen/Desktop/Music/Ripped/';
+const YD = youtubeDownloader(ffmpegPath, outputPath);
 
 const getVideoId = (youtubeLink) => {
     const splitArr = youtubeLink.split('=');
@@ -16,10 +18,10 @@ const getVideoId = (youtubeLink) => {
 ffmetadata.setFfmpegPath(ffmpegPath);
 
 router.post('/convertYoutubeToMp3', (req, res) => {
-    const songName = req.body.fileName + ' (Ripped)';
+    const songName = req.body.song + ' - (Ripped)';
     const fileName = songName + '.mp3';
     const fullPathName = path.join(outputPath, fileName);
-    YD.download(getVideoId(req.body.videoId), fileName);
+    YD.download(getVideoId(req.body.youtubeLink), fileName);
 
     YD.on("progress", function(progress) {
         console.log(JSON.stringify(progress));

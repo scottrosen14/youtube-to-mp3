@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const YoutubeMp3Downloader = require("youtube-mp3-downloader");
 const ffmetadata = require("ffmetadata");
 
-const router = require('router');
+const router = require('./router');
 
 app.use(bodyParser.json())
 app.use('/api', router);

@@ -11,6 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.18.1",
+    "ffmetadata": "^1.7.0",
+    "nodemon": "^2.0.16",
     "path": "^0.12.7",
     "youtube-mp3-downloader": "^0.7.10"
   }

@@ -1,5 +1,6 @@
-//Configure YoutubeMp3Downloader with your settings
-const YD = new YoutubeMp3Downloader({
+const YoutubeMp3Downloader = require("youtube-mp3-downloader");
+
+const youtubeDownloader = (ffmpegPath, outputPath) => new YoutubeMp3Downloader({
     ffmpegPath,        // FFmpeg binary location
     outputPath,    // Output file location (default: the home directory)
     "youtubeVideoQuality": "highestaudio",  // Desired video quality (default: highestaudio)
@@ -8,4 +9,4 @@ const YD = new YoutubeMp3Downloader({
     "allowWebm": false                      // Enable download from WebM sources (default: false)
 });
 
-module.exports = YD;
+module.exports = youtubeDownloader;
