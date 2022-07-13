@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const router = require('./router');
 
 const PROXY = '/api';
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const HOST = 'http://localhost';
 
 app.use(bodyParser.json())
