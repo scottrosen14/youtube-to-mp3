@@ -1,13 +1,15 @@
 const { Router } = require('express');
 const path = require("path");
+const axios = require('axios');
 const ffmetadata = require("ffmetadata");
 const youtubeDownloader = require('./youtubeMP3-config');
+const { readFile, writeMetaData } = require('./tools/processFiles');
 
+axios.defaults.baseURL = 'http://localhost:3000';
 const router = Router();
 
 const ffmpegPath = '/usr/local/bin/ffmpeg';
-const outputPath = '/Users/scottrosen/Desktop/Music/Ripped/';
-const YD = youtubeDownloader(ffmpegPath, outputPath);
+const basePath = path.resolve(__dirname, `../../../Music/Ripped`)
 
 const getVideoId = (youtubeLink) => {
     const splitArr = youtubeLink.split('=');
@@ -17,53 +19,64 @@ const getVideoId = (youtubeLink) => {
 // Set path to ffmpeg - optional if in $PATH or $FFMPEG_PATH
 ffmetadata.setFfmpegPath(ffmpegPath);
 
-router.post('/convertYoutubeToMp3', (req, res) => {
-    const songName = req.body.song + ' - (Ripped)';
-    const fileName = songName + '.mp3';
-    const fullPathName = path.join(outputPath, fileName);
-    YD.download(getVideoId(req.body.youtubeLink), fileName);
-
-    YD.on("progress", function(progress) {
-        console.log(JSON.stringify(progress));
-    });
-    YD.on("finished", function(err, data) {
-        const editedData = {
-            ...data,
-            title: songName,
-            artist: req.body.artist
+router.post('/convertYoutubeToMp3', async (req, res) => {
+    try {
+        const outputPath = path.join(basePath, req.body.genre);
+        const YD = youtubeDownloader(ffmpegPath, outputPath);
+        const videoId = getVideoId(req.body.youtubeLink);
+        const songName = req.body.song + ' - (Ripped) - ' + videoId;
+        const fileName = songName + '.mp3';
+        const fullPathName = path.join(outputPath, fileName);
+        const metaData = await readFile(fullPathName)
+        if (metaData) {
+            const errMsg = 'Duplicate file';
+            console.error(errMsg);
+            throw new Error(errMsg);
         }
-        ffmetadata.write(fullPathName, editedData, function(err) {
-            if (err) {
-                console.error("Error writing metadata", err);
-                res.status(500).send(JSON.stringify(err));
-            } else {
-                console.log("Edited data written to file" + fileName);
-                res.send(editedData)
+
+        YD.download(videoId, fileName);
+        YD.on("progress", function (progress) {
+            console.log(JSON.stringify(progress));
+        });
+        YD.on("finished", async function (err, data) {
+            try {
+                const params = {
+                    ...data,
+                    title: songName,
+                    artist: req.body.artist
+                };
+                const editedData = await writeMetaData(fullPathName, params);
+                const combinedData = {
+                    ...data,
+                    ...editedData
+                }
+                return res.send(combinedData);
+            } catch (error) {
+                return res.status(500).send(JSON.stringify(error));
             }
         });
-    });
-    YD.on("error", function(error) {
-        console.log(error);
-        res.status(500).send(JSON.stringify(error));
-    });
-})
+    } catch(error) {
+        const err = 'Error with Youtube Downloader: ' + error;
+        console.error(err);
+        res.status(500).send(err);
+    }
+});
 
 router.put('/editFileMetaData', (req, res) => {
     const editedData = {
-        title: req.body.songName,
+        title: req.body.song,
         artist: req.body.artist,
-        path: req.body.path
     };
-    const fileName = path.join(req.body.path, `${req.body.songName}.mp3`);
-    ffmetadata.write(fileName, editedData, function(err) {
-        if (err) {
-            console.error("Error writing metadata", err);
-            res.send(JSON.stringify(err));
-        } else {
-            console.log("Edited data written to file");
-            res.send(editedData)
-        }
-    });
+    const outputPath = path.join(basePath, req.body.genre);
+    const fileName = path.join(outputPath, `${req.body.song}.mp3`);
+    writeMetaData(fileName, editedData)
+        .then(data => {
+            const successMsg = 'Edited data written to file: ' + fileName
+            return res.send(successMsg);
+        })
+        .catch(err => {
+            return res.status(500).send(err);
+        });
 })
 
 module.exports = router;
