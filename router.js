@@ -9,8 +9,7 @@ axios.defaults.baseURL = 'http://localhost:3000';
 const router = Router();
 
 const ffmpegPath = '/usr/local/bin/ffmpeg';
-const outputPath = path.resolve(__dirname, '../../../Music/Ripped');
-const YD = youtubeDownloader(ffmpegPath, outputPath);
+const basePath = path.resolve(__dirname, `../../../Music/Ripped`)
 
 const getVideoId = (youtubeLink) => {
     const splitArr = youtubeLink.split('=');
@@ -22,6 +21,8 @@ ffmetadata.setFfmpegPath(ffmpegPath);
 
 router.post('/convertYoutubeToMp3', async (req, res) => {
     try {
+        const outputPath = path.join(basePath, req.body.genre);
+        const YD = youtubeDownloader(ffmpegPath, outputPath);
         const videoId = getVideoId(req.body.youtubeLink);
         const songName = req.body.song + ' - (Ripped) - ' + videoId;
         const fileName = songName + '.mp3';
@@ -40,11 +41,16 @@ router.post('/convertYoutubeToMp3', async (req, res) => {
         YD.on("finished", async function (err, data) {
             try {
                 const params = {
+                    ...data,
                     title: songName,
                     artist: req.body.artist
                 };
                 const editedData = await writeMetaData(fullPathName, params);
-                return res.send(editedData);
+                const combinedData = {
+                    ...data,
+                    ...editedData
+                }
+                return res.send(combinedData);
             } catch (error) {
                 return res.status(500).send(JSON.stringify(error));
             }
@@ -58,18 +64,17 @@ router.post('/convertYoutubeToMp3', async (req, res) => {
 
 router.put('/editFileMetaData', (req, res) => {
     const editedData = {
-        title: req.body.songName,
+        title: req.body.song,
         artist: req.body.artist,
-        path: req.body.path
     };
-    const fileName = path.join(req.body.path, `${req.body.songName}.mp3`);
+    const outputPath = path.join(basePath, req.body.genre);
+    const fileName = path.join(outputPath, `${req.body.song}.mp3`);
     writeMetaData(fileName, editedData)
         .then(data => {
-            console.log("Edited data written to file: " + fileName);
-            return res.send(data);
+            const successMsg = 'Edited data written to file: ' + fileName
+            return res.send(successMsg);
         })
         .catch(err => {
-            console.error("Error writing metadata: ", err);
             return res.status(500).send(err);
         });
 })
